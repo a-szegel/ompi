@@ -1,0 +1,14 @@
+# -*- text -*-
+#
+# Copyright (c) 2022      Amazon.com, Inc. or its affiliates.
+#                         All Rights reserved.
+# $COPYRIGHT$
+#
+# Additional copyrights may follow
+#
+# $HEADER$
+#
+[Multiple Accelerators Found]
+ERROR: Both %s and %s accelerator frameworks were successfully initialized,
+but only one accelerator framework is currently supported. The program will
+abort to allow you to resolve the accelerator conflict.
