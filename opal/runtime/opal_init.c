@@ -42,6 +42,7 @@
 #include "opal/include/opal_config.h"
 
 #include "opal/datatype/opal_datatype.h"
+#include "opal/mca/accelerator/base/base.h"
 #include "opal/mca/base/base.h"
 #include "opal/mca/base/mca_base_var.h"
 #include "opal/mca/hwloc/base/base.h"
@@ -694,6 +695,12 @@ int opal_init(int *pargc, char ***pargv)
     /* Intitialize reachable framework */
     if (OPAL_SUCCESS != (ret = opal_reachable_base_select())) {
         return opal_init_error("opal_reachable_base_select", ret);
+    }
+
+    /* Intitialize Accelerator framework */
+    ret = mca_base_framework_open(&opal_accelerator_base_framework, 0);
+    if (OPAL_SUCCESS == ret && OPAL_SUCCESS != (ret = opal_accelerator_base_select())) {
+        return opal_init_error("opal_accelerator_base_select", ret);
     }
 
     ++opal_initialized;
