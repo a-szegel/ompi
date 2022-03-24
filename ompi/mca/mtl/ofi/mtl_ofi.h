@@ -310,7 +310,7 @@ int ompi_mtl_ofi_register_buffer(struct opal_convertor_t *convertor,
     }
 
 #if OPAL_CUDA_SUPPORT
-    if (convertor->flags & CONVERTOR_CUDA) {
+    if (convertor->flags & CONVERTOR_ACCELERATOR) {
         /* Register buffer */
         int ret;
         struct fi_mr_attr attr = {0};
@@ -864,7 +864,7 @@ ompi_mtl_ofi_send_generic(struct mca_mtl_base_module_t *mtl,
      *  https://github.com/ofiwg/libfabric/issues/5861
      */
 #if OPAL_CUDA_SUPPORT
-    if (!(convertor->flags & CONVERTOR_CUDA)
+    if (!(convertor->flags & CONVERTOR_ACCELERATOR)
         && (ompi_mtl_ofi.max_inject_size >= length)) {
 #else /* !(OPAL_CUDA_SUPPORT)*/
     if (ompi_mtl_ofi.max_inject_size >= length) {

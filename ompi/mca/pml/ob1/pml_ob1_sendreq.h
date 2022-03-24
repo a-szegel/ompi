@@ -398,7 +398,7 @@ mca_pml_ob1_send_request_start_btl( mca_pml_ob1_send_request_t* sendreq,
     int rc;
 
 #if OPAL_CUDA_GDR_SUPPORT
-    if (btl->btl_cuda_eager_limit && (sendreq->req_send.req_base.req_convertor.flags & CONVERTOR_CUDA)) {
+    if (btl->btl_cuda_eager_limit && (sendreq->req_send.req_base.req_convertor.flags & CONVERTOR_ACCELERATOR)) {
         eager_limit = btl->btl_cuda_eager_limit - sizeof(mca_pml_ob1_hdr_t);
     }
 #endif /* OPAL_CUDA_GDR_SUPPORT */
@@ -449,7 +449,7 @@ mca_pml_ob1_send_request_start_btl( mca_pml_ob1_send_request_t* sendreq,
             }
         } else {
 #if OPAL_CUDA_SUPPORT
-            if (sendreq->req_send.req_base.req_convertor.flags & CONVERTOR_CUDA) {
+            if (sendreq->req_send.req_base.req_convertor.flags & CONVERTOR_ACCELERATOR) {
                 return mca_pml_ob1_send_request_start_cuda(sendreq, bml_btl, size);
             }
 #endif /* OPAL_CUDA_SUPPORT */

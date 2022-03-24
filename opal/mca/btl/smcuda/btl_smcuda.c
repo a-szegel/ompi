@@ -876,7 +876,7 @@ int mca_btl_smcuda_sendi(struct mca_btl_base_module_t *btl,
         mca_btl_smcuda_send_cuda_ipc_request(btl, endpoint);
     }
     /* We do not want to use this path when we have CUDA IPC support */
-    if ((convertor->flags & CONVERTOR_CUDA) && (IPC_ACKED == endpoint->ipcstate)) {
+    if ((convertor->flags & CONVERTOR_ACCELERATOR) && (IPC_ACKED == endpoint->ipcstate)) {
         goto return_resource_busy;
     }
 #endif /* OPAL_CUDA_SUPPORT */

@@ -760,7 +760,7 @@ void mca_pml_ob1_recv_frag_callback_ack (mca_btl_base_module_t *btl,
     }
 
 #if OPAL_CUDA_SUPPORT /* CUDA_ASYNC_SEND */
-    if ((sendreq->req_send.req_base.req_convertor.flags & CONVERTOR_CUDA) &&
+    if ((sendreq->req_send.req_base.req_convertor.flags & CONVERTOR_ACCELERATOR) &&
         (btl->btl_flags & MCA_BTL_FLAGS_CUDA_COPY_ASYNC_SEND)) {
         /* The user's buffer is GPU and this BTL can support asynchronous copies,
          * so adjust the convertor accordingly.  All the subsequent fragments will
@@ -791,7 +791,7 @@ void mca_pml_ob1_recv_frag_callback_frag (mca_btl_base_module_t *btl,
     /* If data is destined for GPU buffer and convertor was set up for asynchronous
      * copies, then start the copy and return.  The copy completion will trigger
      * the next phase. */
-    if (recvreq->req_recv.req_base.req_convertor.flags & CONVERTOR_CUDA_ASYNC) {
+    if (recvreq->req_recv.req_base.req_convertor.flags & CONVERTOR_ACCELERATOR_ASYNC) {
         assert(btl->btl_flags & MCA_BTL_FLAGS_CUDA_COPY_ASYNC_RECV);
 
         /* This will trigger the opal_convertor_pack to start asynchronous copy. */

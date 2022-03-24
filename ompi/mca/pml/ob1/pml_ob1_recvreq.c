@@ -728,7 +728,7 @@ void mca_pml_ob1_recv_request_progress_rget( mca_pml_ob1_recv_request_t* recvreq
 
 #if OPAL_CUDA_SUPPORT
     if (OPAL_UNLIKELY(NULL == rdma_bml)) {
-        if (recvreq->req_recv.req_base.req_convertor.flags & CONVERTOR_CUDA) {
+        if (recvreq->req_recv.req_base.req_convertor.flags & CONVERTOR_ACCELERATOR) {
             mca_bml_base_btl_t *bml_btl;
             bml_btl = mca_bml_base_btl_array_find(&bml_endpoint->btl_send, btl);
             /* Check to see if this is a CUDA get */
@@ -759,7 +759,7 @@ void mca_pml_ob1_recv_request_progress_rget( mca_pml_ob1_recv_request_t* recvreq
         void *data_ptr;
         uint32_t flags = MCA_BTL_REG_FLAG_LOCAL_WRITE | MCA_BTL_REG_FLAG_REMOTE_WRITE;
 #if OPAL_CUDA_GDR_SUPPORT
-        if (recvreq->req_recv.req_base.req_convertor.flags & CONVERTOR_CUDA) {
+        if (recvreq->req_recv.req_base.req_convertor.flags & CONVERTOR_ACCELERATOR) {
             flags |= MCA_BTL_REG_FLAG_CUDA_GPU_MEM;
         }
 #endif /* OPAL_CUDA_GDR_SUPPORT */
@@ -900,7 +900,7 @@ void mca_pml_ob1_recv_request_progress_rndv( mca_pml_ob1_recv_request_t* recvreq
 #if OPAL_CUDA_SUPPORT /* CUDA_ASYNC_RECV */
     /* If BTL supports it and this is a CUDA buffer being received into,
      * have all subsequent FRAGS copied in asynchronously. */
-    if ((recvreq->req_recv.req_base.req_convertor.flags & CONVERTOR_CUDA) &&
+    if ((recvreq->req_recv.req_base.req_convertor.flags & CONVERTOR_ACCELERATOR) &&
         (btl->btl_flags & MCA_BTL_FLAGS_CUDA_COPY_ASYNC_RECV)) {
         void *strm = mca_common_cuda_get_htod_stream();
         opal_cuda_set_copy_function_async(&recvreq->req_recv.req_base.req_convertor, strm);

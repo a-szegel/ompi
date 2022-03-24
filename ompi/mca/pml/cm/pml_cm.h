@@ -178,7 +178,7 @@ mca_pml_cm_recv(void *addr,
         ompi_proc = ompi_comm_peer_lookup( comm, src );
     }
 
-    MCA_PML_CM_SWITCH_CUDA_CONVERTOR_OFF(flags, datatype, count);
+    MCA_PML_CM_SWITCH_ACCELERATOR_CONVERTOR_OFF(flags, datatype, count);
 
     opal_convertor_copy_and_prepare_for_recv(
 	ompi_proc->super.proc_convertor,
@@ -188,7 +188,7 @@ mca_pml_cm_recv(void *addr,
                 flags,
 		&convertor );
 #else
-    MCA_PML_CM_SWITCH_CUDA_CONVERTOR_OFF(flags, datatype, count);
+    MCA_PML_CM_SWITCH_ACCELERATOR_CONVERTOR_OFF(flags, datatype, count);
 
     opal_convertor_copy_and_prepare_for_recv(
 	ompi_mpi_local_convertor,
@@ -383,7 +383,7 @@ mca_pml_cm_send(const void *buf,
 #if OPAL_CUDA_SUPPORT
         /* Switches off CUDA detection if
            MTL set MCA_MTL_BASE_FLAG_CUDA_INIT_DISABLE during init */
-        MCA_PML_CM_SWITCH_CUDA_CONVERTOR_OFF(flags, datatype, count);
+        MCA_PML_CM_SWITCH_ACCELERATOR_CONVERTOR_OFF(flags, datatype, count);
         convertor.flags      |= flags;
         /* Sets CONVERTOR_CUDA flag if CUDA buffer */
         opal_convertor_prepare_for_send( &convertor, &datatype->super, count, buf );
@@ -393,7 +393,7 @@ mca_pml_cm_send(const void *buf,
 	{
 		ompi_proc = ompi_comm_peer_lookup(comm, dst);
 
-                MCA_PML_CM_SWITCH_CUDA_CONVERTOR_OFF(flags, datatype, count);
+                MCA_PML_CM_SWITCH_ACCELERATOR_CONVERTOR_OFF(flags, datatype, count);
 
 		opal_convertor_copy_and_prepare_for_send(
 		ompi_proc->super.proc_convertor,

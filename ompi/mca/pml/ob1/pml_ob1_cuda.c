@@ -59,18 +59,18 @@ int mca_pml_ob1_send_request_start_cuda(mca_pml_ob1_send_request_t* sendreq,
     int rc;
 #if OPAL_CUDA_GDR_SUPPORT
     /* With some BTLs, switch to RNDV from RGET at large messages */
-    if ((sendreq->req_send.req_base.req_convertor.flags & CONVERTOR_CUDA) &&
+    if ((sendreq->req_send.req_base.req_convertor.flags & CONVERTOR_ACCELERATOR) &&
         (sendreq->req_send.req_bytes_packed > (bml_btl->btl->btl_cuda_rdma_limit - sizeof(mca_pml_ob1_hdr_t)))) {
         return mca_pml_ob1_send_request_start_rndv(sendreq, bml_btl, 0, 0);
     }
 #endif /* OPAL_CUDA_GDR_SUPPORT */
 
-    sendreq->req_send.req_base.req_convertor.flags &= ~CONVERTOR_CUDA;
+    sendreq->req_send.req_base.req_convertor.flags &= ~CONVERTOR_ACCELERATOR;
     if (opal_convertor_need_buffers(&sendreq->req_send.req_base.req_convertor) == false) {
         unsigned char *base;
         opal_convertor_get_current_pointer( &sendreq->req_send.req_base.req_convertor, (void**)&base );
         /* Set flag back */
-        sendreq->req_send.req_base.req_convertor.flags |= CONVERTOR_CUDA;
+        sendreq->req_send.req_base.req_convertor.flags |= CONVERTOR_ACCELERATOR;
         if( 0 != (sendreq->req_rdma_cnt = (uint32_t)mca_pml_ob1_rdma_cuda_btls(
                                                                            sendreq->req_endpoint,
                                                                            base,
@@ -92,7 +92,7 @@ int mca_pml_ob1_send_request_start_cuda(mca_pml_ob1_send_request_t* sendreq,
     } else {
         /* Do not send anything with first rendezvous message as copying GPU
          * memory into RNDV message is expensive. */
-        sendreq->req_send.req_base.req_convertor.flags |= CONVERTOR_CUDA;
+        sendreq->req_send.req_base.req_convertor.flags |= CONVERTOR_ACCELERATOR;
         rc = mca_pml_ob1_send_request_start_rndv(sendreq, bml_btl, 0, 0);
     }
     return rc;
@@ -170,14 +170,14 @@ int mca_pml_ob1_cuda_need_buffers(void * rreq,
     /* We should always be able to find back the bml_btl based on the btl */
     assert(NULL != bml_btl);
 
-    if ((recvreq->req_recv.req_base.req_convertor.flags & CONVERTOR_CUDA) &&
+    if ((recvreq->req_recv.req_base.req_convertor.flags & CONVERTOR_ACCELERATOR) &&
         (bml_btl->btl_flags & MCA_BTL_FLAGS_CUDA_GET)) {
-        recvreq->req_recv.req_base.req_convertor.flags &= ~CONVERTOR_CUDA;
+        recvreq->req_recv.req_base.req_convertor.flags &= ~CONVERTOR_ACCELERATOR;
         if(opal_convertor_need_buffers(&recvreq->req_recv.req_base.req_convertor) == true) {
-            recvreq->req_recv.req_base.req_convertor.flags |= CONVERTOR_CUDA;
+            recvreq->req_recv.req_base.req_convertor.flags |= CONVERTOR_ACCELERATOR;
             return true;
         } else {
-            recvreq->req_recv.req_base.req_convertor.flags |= CONVERTOR_CUDA;
+            recvreq->req_recv.req_base.req_convertor.flags |= CONVERTOR_ACCELERATOR;
             return false;
         }
     }

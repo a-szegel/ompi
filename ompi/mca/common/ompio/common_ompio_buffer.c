@@ -51,7 +51,7 @@ void mca_common_ompio_check_gpu_buf ( ompio_file_t *fh, const void *buf, int *is
     convertor.flags=0;
     if ( opal_cuda_check_one_buf ( (char *)buf, &convertor ) ) {
         *is_gpu = 1;
-        if ( convertor.flags & CONVERTOR_CUDA_UNIFIED ){
+        if ( convertor.flags & CONVERTOR_ACCELERATOR_UNIFIED ){
             *is_managed =1;
         }
     } 

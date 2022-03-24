@@ -568,7 +568,7 @@ int32_t opal_convertor_prepare_for_recv(opal_convertor_t *convertor,
 
     convertor->flags |= CONVERTOR_RECV;
 #if OPAL_CUDA_SUPPORT
-    if (!(convertor->flags & CONVERTOR_SKIP_CUDA_INIT)) {
+    if (!(convertor->flags & CONVERTOR_SKIP_ACCELERATOR_INIT)) {
         mca_cuda_convertor_init(convertor, pUserBuf);
     }
 #elif OPAL_ROCM_SUPPORT
@@ -614,7 +614,7 @@ int32_t opal_convertor_prepare_for_send(opal_convertor_t *convertor,
 {
     convertor->flags |= CONVERTOR_SEND;
 #if OPAL_CUDA_SUPPORT
-    if (!(convertor->flags & CONVERTOR_SKIP_CUDA_INIT)) {
+    if (!(convertor->flags & CONVERTOR_SKIP_ACCELERATOR_INIT)) {
         mca_cuda_convertor_init(convertor, pUserBuf);
     }
 #elif OPAL_ROCM_SUPPORT
@@ -742,10 +742,10 @@ void opal_convertor_dump(opal_convertor_t *convertor)
     if (convertor->flags & CONVERTOR_WITH_CHECKSUM) {
         opal_output(0, "checksum ");
     }
-    if (convertor->flags & CONVERTOR_CUDA) {
+    if (convertor->flags & CONVERTOR_ACCELERATOR) {
         opal_output(0, "CUDA ");
     }
-    if (convertor->flags & CONVERTOR_CUDA_ASYNC) {
+    if (convertor->flags & CONVERTOR_ACCELERATOR_ASYNC) {
         opal_output(0, "CUDA Async ");
     }
     if (convertor->flags & CONVERTOR_COMPLETED) {
