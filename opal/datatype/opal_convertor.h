@@ -182,10 +182,9 @@ static inline int32_t opal_convertor_need_buffers(const opal_convertor_t *pConve
 {
     if (OPAL_UNLIKELY(0 == (pConvertor->flags & CONVERTOR_HOMOGENEOUS)))
         return 1;
-#if OPAL_CUDA_SUPPORT
     if (pConvertor->flags & (CONVERTOR_ACCELERATOR | CONVERTOR_ACCELERATOR_UNIFIED | CONVERTOR_ROCM))
+    if (pConvertor->flags & (CONVERTOR_ACCELERATOR | CONVERTOR_ACCELERATOR_UNIFIED))
         return 1;
-#endif
     if (pConvertor->flags & OPAL_DATATYPE_FLAG_NO_GAPS)
         return 0;
     if ((pConvertor->count == 1) && (pConvertor->flags & OPAL_DATATYPE_FLAG_CONTIGUOUS))

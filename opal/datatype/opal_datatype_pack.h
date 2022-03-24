@@ -23,8 +23,8 @@
 #include "opal_config.h"
 #include "opal/datatype/opal_datatype_pack_unpack_predefined.h"
 
-#if !defined(CHECKSUM) && (OPAL_CUDA_SUPPORT || OPAL_ROCM_SUPPORT)
-/* Make use of existing macro to do CUDA style memcpy */
+#if !defined(CHECKSUM)
+/* Make use of existing macro to do device style memcpy */
 #    undef MEMCPY_CSUM
 #    define MEMCPY_CSUM(DST, SRC, BLENGTH, CONVERTOR) \
         CONVERTOR->cbmemcpy((DST), (SRC), (BLENGTH), (CONVERTOR))
