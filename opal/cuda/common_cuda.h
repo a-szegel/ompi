@@ -125,7 +125,6 @@ struct opal_common_cuda_function_table {
 };
 typedef struct opal_common_cuda_function_table opal_common_cuda_function_table_t;
 
-void mca_cuda_convertor_init(opal_convertor_t *convertor, const void *pUserBuf);
 bool opal_cuda_check_bufs(char *dest, char *src);
 bool opal_cuda_check_one_buf(char *buf, opal_convertor_t *convertor);
 void *opal_cuda_malloc(size_t size, opal_convertor_t *convertor);

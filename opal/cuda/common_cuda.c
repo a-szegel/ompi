@@ -2072,33 +2072,6 @@ void opal_cuda_add_initialization_function(int (*fptr)(opal_common_cuda_function
     common_cuda_initialization_function = fptr;
 }
 
-/**
- * This function is called when a convertor is instantiated.  It has to call
- * the opal_cuda_support_init() function once to figure out if CUDA support
- * is enabled or not.  If CUDA is not enabled, then short circuit out
- * for all future calls.
- */
-void mca_cuda_convertor_init(opal_convertor_t *convertor, const void *pUserBuf)
-{
-    /* Only do the initialization on the first GPU access */
-    if (!initialized) {
-        opal_cuda_support_init();
-    }
-
-    /* This is needed to handle case where convertor is not fully initialized
-     * like when trying to do a sendi with convertor on the statck */
-    convertor->cbmemcpy = (memcpy_fct_t) &opal_cuda_memcpy;
-
-    /* If not enabled, then nothing else to do */
-    if (!opal_cuda_enabled) {
-        return;
-    }
-
-    if (ftable.gpu_is_gpu_buffer(pUserBuf, convertor)) {
-        convertor->flags |= CONVERTOR_ACCELERATOR;
-    }
-}
-
 /* Checks the type of pointer
  *
  * @param dest   One pointer to check
