@@ -20,9 +20,6 @@
 #include "opal/util/argv.h"
 #include "opal/util/printf.h"
 #include "opal/mca/common/ofi/common_ofi.h"
-#if OPAL_CUDA_SUPPORT
-#include "opal/cuda/common_cuda.h"
-#endif /* OPAL_CUDA_SUPPORT */
 
 static int ompi_mtl_ofi_component_open(void);
 static int ompi_mtl_ofi_component_query(mca_base_module_t **module, int *priority);
@@ -297,9 +294,6 @@ ompi_mtl_ofi_component_query(mca_base_module_t **module, int *priority)
 static int
 ompi_mtl_ofi_component_close(void)
 {
-#if OPAL_CUDA_SUPPORT
-    mca_common_cuda_fini();
-#endif
     return opal_common_ofi_close();
 }
 
@@ -514,7 +508,7 @@ static int ompi_mtl_ofi_init_regular_ep(struct fi_info * prov, int universe_size
         return ret;
     }
 
-#if OPAL_CUDA_SUPPORT && HAVE_DECL_FI_OPT_FI_HMEM_P2P
+#if HAVE_DECL_FI_OPT_FI_HMEM_P2P
     /*
      * Set the FI_HMEM peer to peer option to ENABLED. This notifies Libfabric
      * that the provider can decide whether to use device peer to peer support
@@ -543,7 +537,7 @@ static int ompi_mtl_ofi_init_regular_ep(struct fi_info * prov, int universe_size
                 return ret;
             }
     }
-#endif /* OPAL_CUDA_SUPPORT && FI_OPT_FI_HMEM_P2P */
+#endif /* HAVE_DECL_FI_OPT_FI_HMEM_P2P */
 
     /**
      * Create the objects that will be bound to the endpoint.
@@ -628,8 +622,10 @@ ompi_mtl_ofi_component_init(bool enable_progress_threads,
      * that checking -- e.g., the shared memory provider supports
      * intranode communication (FI_LOCAL_COMM), but not internode
      * (FI_REMOTE_COMM), which is insufficient for MTL selection.
+     *
+     * Note: API version 1.9 is the first version that supports FI_HMEM
      */
-    fi_version = FI_VERSION(1, 5);
+    fi_version = FI_VERSION(1, 9);
 
     /**
      * Hints to filter providers
@@ -649,16 +645,9 @@ ompi_mtl_ofi_component_init(bool enable_progress_threads,
         goto error;
     }
 
-#if OPAL_CUDA_SUPPORT
-    /** If Open MPI is built with CUDA, request device transfer
-     *  capabilities */
+    /* Request device transfer capabilities */
     hints->caps |= FI_HMEM;
     hints->domain_attr->mr_mode |= FI_MR_HMEM;
-    /**
-     * Note: API version 1.9 is the first version that supports FI_HMEM
-     */
-    fi_version = FI_VERSION(1, 9);
-#endif /* OPAL_CUDA_SUPPORT */
 
     /* Make sure to get a RDM provider that can do the tagged matching
        interface and local communication and remote communication. */
@@ -802,14 +791,12 @@ select_prov:
     opal_argv_free(exclude_list);
     exclude_list = NULL;
 
-#if OPAL_CUDA_SUPPORT
     if (!(prov->caps & FI_HMEM)) {
         opal_output_verbose(1, opal_common_ofi.output,
-                            "%s:%d: Libfabric provider does not support CUDA buffers\n",
+                            "%s:%d: Libfabric provider does not support device buffers\n",
                             __FILE__, __LINE__);
         goto error;
     }
-#endif /* OPAL_CUDA_SUPPORT */
 
     /**
      * Select the format of the OFI tag
@@ -1103,10 +1090,6 @@ select_prov:
     ompi_mtl_ofi.has_posted_initial_buffer = false;
     
     ompi_mtl_ofi.base.mtl_flags |= MCA_MTL_BASE_FLAG_SUPPORTS_EXT_CID;
-
-#if OPAL_CUDA_SUPPORT
-    mca_common_cuda_stage_one_init();
-#endif
 
     return &ompi_mtl_ofi.base;
 
