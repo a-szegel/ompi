@@ -56,7 +56,7 @@ OBJ_CLASS_DECLARATION(mca_pml_cm_request_t);
 
 /*
  * Avoid accelerator convertor inits only for contiguous memory and if indicated by
- * the MTL. For non-contiguous memory, do not skip CUDA convertor init phases.
+ * the MTL. For non-contiguous memory, do not skip accelerator convertor init phases.
  */
 #define MCA_PML_CM_SWITCH_ACCELERATOR_CONVERTOR_OFF(flags, datatype, count)            \
     {                                                                           \

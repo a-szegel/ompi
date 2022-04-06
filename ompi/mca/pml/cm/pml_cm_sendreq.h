@@ -250,7 +250,7 @@ do {                                                                    \
              MTL set MCA_MTL_BASE_FLAG_ACCELERATOR_INIT_DISABLE during init */     \
             MCA_PML_CM_SWITCH_ACCELERATOR_CONVERTOR_OFF(flags, datatype, count);   \
             (req_send)->req_base.req_convertor.flags |= flags;              \
-            /* Sets CONVERTOR_CUDA flag if CUDA buffer */                   \
+            /* Sets CONVERTOR_ACCELERATOR flag if device buffer */                   \
             opal_convertor_prepare_for_send(                            \
                 &req_send->req_base.req_convertor,                      \
                 &datatype->super, count, buf );                         \

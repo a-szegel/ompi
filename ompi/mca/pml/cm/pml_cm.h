@@ -380,14 +380,12 @@ mca_pml_cm_send(const void *buf,
 		convertor.count      = count;
 		convertor.pDesc      = &datatype->super;
 
-#if OPAL_CUDA_SUPPORT
-        /* Switches off CUDA detection if
-           MTL set MCA_MTL_BASE_FLAG_CUDA_INIT_DISABLE during init */
+        /* Switches off device detection if
+           MTL set MCA_MTL_BASE_FLAG_ACCELERATOR_INIT_DISABLE during init */
         MCA_PML_CM_SWITCH_ACCELERATOR_CONVERTOR_OFF(flags, datatype, count);
         convertor.flags      |= flags;
-        /* Sets CONVERTOR_CUDA flag if CUDA buffer */
+        /* Sets CONVERTOR_ACCELERATOR flag if device buffer */
         opal_convertor_prepare_for_send( &convertor, &datatype->super, count, buf );
-#endif
     } else
 #endif
 	{
