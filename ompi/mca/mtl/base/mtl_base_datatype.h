@@ -26,69 +26,10 @@
 #include "ompi/datatype/ompi_datatype.h"
 #include "opal/datatype/opal_convertor.h"
 #include "opal/datatype/opal_datatype_internal.h"
-#if OPAL_CUDA_SUPPORT
-#include "opal/cuda/common_cuda.h"
-#include "opal/datatype/opal_convertor.h"
-#endif
+#include "opal/mca/accelerator/accelerator.h"
 
 #ifndef MTL_BASE_DATATYPE_H_INCLUDED
 #define MTL_BASE_DATATYPE_H_INCLUDED
-
-#if OPAL_CUDA_SUPPORT
-static int
-ompi_mtl_cuda_datatype_pack(struct opal_convertor_t *convertor,
-                            void **buffer,
-                            size_t *buffer_len,
-                            bool *freeAfter)
-{
-
-    struct iovec iov;
-    uint32_t iov_count = 1;
-    int is_cuda = convertor->flags & CONVERTOR_ACCELERATOR;
-
-#if !(OPAL_ENABLE_HETEROGENEOUS_SUPPORT)
-    if (convertor->pDesc &&
-	!(convertor->flags & CONVERTOR_COMPLETED) &&
-	opal_datatype_is_contiguous_memory_layout(convertor->pDesc,
-						  convertor->count)) {
-	    *freeAfter = false;
-	    *buffer = convertor->pBaseBuf;
-	    *buffer_len = convertor->local_size;
-	    return OPAL_SUCCESS;
-    }
-#endif
-
-    opal_convertor_get_packed_size(convertor, buffer_len);
-    *freeAfter  = false;
-    if( 0 == *buffer_len ) {
-        *buffer     = NULL;
-        return OMPI_SUCCESS;
-    }
-    iov.iov_len = *buffer_len;
-    iov.iov_base = NULL;
-    /* opal_convertor_need_buffers always returns true
-     * if CONVERTOR_CUDA is set, so unset temporarily
-     */
-    convertor->flags &= ~CONVERTOR_ACCELERATOR;
-
-    if (opal_convertor_need_buffers(convertor)) {
-        if (is_cuda) {
-            convertor->flags |= CONVERTOR_ACCELERATOR;
-        }
-        iov.iov_base = opal_cuda_malloc(*buffer_len, convertor);
-        if (NULL == iov.iov_base) return OMPI_ERR_OUT_OF_RESOURCE;
-        *freeAfter = true;
-    } else if (is_cuda) {
-            convertor->flags |= CONVERTOR_ACCELERATOR;
-    }
-
-    opal_convertor_pack( convertor, &iov, &iov_count, buffer_len );
-
-    *buffer = iov.iov_base;
-
-    return OMPI_SUCCESS;
-}
-#endif
 
 __opal_attribute_always_inline__ static inline int
 ompi_mtl_datatype_pack(struct opal_convertor_t *convertor,
@@ -96,22 +37,16 @@ ompi_mtl_datatype_pack(struct opal_convertor_t *convertor,
                        size_t *buffer_len,
                        bool *freeAfter)
 {
-#if OPAL_CUDA_SUPPORT
-    return ompi_mtl_cuda_datatype_pack(convertor,
-                                       buffer,
-                                       buffer_len,
-                                       freeAfter);
-#endif
     struct iovec iov;
     uint32_t iov_count = 1;
+    int is_accelerator = convertor->flags & CONVERTOR_ACCELERATOR;
 
 #if !(OPAL_ENABLE_HETEROGENEOUS_SUPPORT)
     if (convertor->pDesc &&
 	!(convertor->flags & CONVERTOR_COMPLETED) &&
 	opal_datatype_is_contiguous_memory_layout(convertor->pDesc,
 						  convertor->count)) {
-	    *freeAfter = false;
-	    *buffer = convertor->pBaseBuf;
+	    *freeAfter = false; *buffer = convertor->pBaseBuf;
 	    *buffer_len = convertor->local_size;
 	    return OPAL_SUCCESS;
     }
@@ -125,96 +60,78 @@ ompi_mtl_datatype_pack(struct opal_convertor_t *convertor,
     }
     iov.iov_len = *buffer_len;
     iov.iov_base = NULL;
+    /* opal_convertor_need_buffers always returns true
+     * if CONVERTOR_ACCELERATOR is set, so unset temporarily
+     */
+    convertor->flags &= ~CONVERTOR_ACCELERATOR;
+
     if (opal_convertor_need_buffers(convertor)) {
-        iov.iov_base = malloc(*buffer_len);
+        if (is_accelerator) {
+            convertor->flags |= CONVERTOR_ACCELERATOR;
+            opal_accelerator.malloc(&iov.iov_base, *buffer_len);
+        } else {
+            iov.iov_base = malloc(*buffer_len);
+        }
         if (NULL == iov.iov_base) return OMPI_ERR_OUT_OF_RESOURCE;
         *freeAfter = true;
+    } else if (is_accelerator) {
+            convertor->flags |= CONVERTOR_ACCELERATOR;
     }
 
-    opal_convertor_pack( convertor, &iov, &iov_count, buffer_len );
+    opal_convertor_pack(convertor, &iov, &iov_count, buffer_len);
 
     *buffer = iov.iov_base;
 
     return OMPI_SUCCESS;
 }
 
-#if OPAL_CUDA_SUPPORT
-static int
-ompi_mtl_cuda_datatype_recv_buf(struct opal_convertor_t *convertor,
-                                void ** buffer,
-                                size_t *buffer_len,
-                                bool *free_on_error)
-{
-    int is_cuda = convertor->flags & CONVERTOR_ACCELERATOR;
-    opal_convertor_get_packed_size(convertor, buffer_len);
-    *free_on_error = false;
-    if( 0 == *buffer_len ) {
-        *buffer = NULL;
-        *buffer_len = 0;
-        return OMPI_SUCCESS;
-    }
-    /* opal_convertor_need_buffers always returns true
-     * if CONVERTOR_CUDA is set, so unset temporarily
-     */
-    convertor->flags &= ~CONVERTOR_ACCELERATOR;
-    if (opal_convertor_need_buffers(convertor)) {
-        if (is_cuda) {
-            convertor->flags |= CONVERTOR_ACCELERATOR;
-        }
-        *buffer = opal_cuda_malloc(*buffer_len, convertor);
-        *free_on_error = true;
-    } else {
-        if (is_cuda) {
-            convertor->flags |= CONVERTOR_ACCELERATOR;
-        }
-        *buffer = convertor->pBaseBuf +
-            convertor->use_desc->desc[convertor->use_desc->used].end_loop.first_elem_disp;
-    }
-    return OMPI_SUCCESS;
-
-}
-#endif
-
 __opal_attribute_always_inline__ static inline int
 ompi_mtl_datatype_recv_buf(struct opal_convertor_t *convertor,
-                           void ** buffer,
+                           void **buffer,
                            size_t *buffer_len,
                            bool *free_on_error)
 {
-#if OPAL_CUDA_SUPPORT
-    return ompi_mtl_cuda_datatype_recv_buf(convertor,
-                                           buffer,
-                                           buffer_len,
-                                           free_on_error);
-#endif
-
+    int is_accelerator = convertor->flags & CONVERTOR_ACCELERATOR;
     opal_convertor_get_packed_size(convertor, buffer_len);
     *free_on_error = false;
+    *buffer = NULL;
     if( 0 == *buffer_len ) {
-        *buffer = NULL;
         *buffer_len = 0;
         return OMPI_SUCCESS;
     }
+    /* opal_convertor_need_buffers always returns true
+     * if CONVERTOR_ACCELERATOR is set, so unset temporarily
+     */
+    convertor->flags &= ~CONVERTOR_ACCELERATOR;
     if (opal_convertor_need_buffers(convertor)) {
-        *buffer = malloc(*buffer_len);
+        if (is_accelerator) {
+            convertor->flags |= CONVERTOR_ACCELERATOR;
+            opal_accelerator.malloc(buffer, *buffer_len);
+        } else {
+            *buffer = malloc(*buffer_len);
+        }
+        if (NULL == *buffer) return OMPI_ERR_OUT_OF_RESOURCE;
         *free_on_error = true;
     } else {
+        if (is_accelerator) {
+            convertor->flags |= CONVERTOR_ACCELERATOR;
+        }
         *buffer = convertor->pBaseBuf +
             convertor->use_desc->desc[convertor->use_desc->used].end_loop.first_elem_disp;
     }
     return OMPI_SUCCESS;
 }
 
-#if OPAL_CUDA_SUPPORT
-static int
-ompi_mtl_cuda_datatype_unpack(struct opal_convertor_t *convertor,
-                              void *buffer,
-                              size_t buffer_len) {
+__opal_attribute_always_inline__ static inline int
+ompi_mtl_datatype_unpack(struct opal_convertor_t *convertor,
+                         void *buffer,
+                         size_t buffer_len)
+{
     struct iovec iov;
     uint32_t iov_count = 1;
-    int is_cuda = convertor->flags & CONVERTOR_ACCELERATOR;
+    int is_accelerator = convertor->flags & CONVERTOR_ACCELERATOR;
     /* opal_convertor_need_buffers always returns true
-     * if CONVERTOR_CUDA is set, so unset temporarily
+     * if CONVERTOR_ACCELERATOR is set, so unset temporarily
      */
      convertor->flags &= ~CONVERTOR_ACCELERATOR;
 
@@ -222,41 +139,17 @@ ompi_mtl_cuda_datatype_unpack(struct opal_convertor_t *convertor,
         iov.iov_len = buffer_len;
         iov.iov_base = buffer;
 
-        if (is_cuda) {
+        if (is_accelerator) {
             convertor->flags |= CONVERTOR_ACCELERATOR;
         }
-        opal_convertor_unpack(convertor, &iov, &iov_count, &buffer_len );
-
-        opal_cuda_free(buffer, convertor);
-    } else if (is_cuda) {
+        opal_convertor_unpack(convertor, &iov, &iov_count, &buffer_len);
+        if (is_accelerator) {
+            opal_accelerator.free(buffer);
+        } else {
+            free(buffer);
+        }
+    } else if (is_accelerator) {
         convertor->flags |= CONVERTOR_ACCELERATOR;
-    }
-
-    return OMPI_SUCCESS;
-
-}
-#endif
-
-__opal_attribute_always_inline__ static inline int
-ompi_mtl_datatype_unpack(struct opal_convertor_t *convertor,
-                         void *buffer,
-                         size_t buffer_len)
-{
-#if OPAL_CUDA_SUPPORT
-    return ompi_mtl_cuda_datatype_unpack(convertor,
-                                         buffer,
-                                         buffer_len);
-#endif
-    struct iovec iov;
-    uint32_t iov_count = 1;
-
-    if (buffer_len > 0 && opal_convertor_need_buffers(convertor)) {
-        iov.iov_len = buffer_len;
-        iov.iov_base = buffer;
-
-        opal_convertor_unpack(convertor, &iov, &iov_count, &buffer_len );
-
-        free(buffer);
     }
 
     return OMPI_SUCCESS;
