@@ -31,10 +31,7 @@
 #include "mpi.h"
 
 #include "coll_libnbc.h"
-#if OPAL_CUDA_SUPPORT
-#include "opal/datatype/opal_convertor.h"
-#include "opal/cuda/common_cuda.h"
-#endif /* OPAL_CUDA_SUPPORT */
+#include "opal/mca/accelerator/accelerator.h"
 #include "ompi/include/ompi/constants.h"
 #include "ompi/request/request.h"
 #include "ompi/datatype/ompi_datatype.h"
@@ -522,19 +519,18 @@ static inline int NBC_Copy(const void *src, int srccount, MPI_Datatype srctype, 
 
 static inline int NBC_Unpack(void *src, int srccount, MPI_Datatype srctype, void *tgt, MPI_Comm comm) {
   MPI_Aint size, pos;
-  int res;
+  int res, dev_id;
   ptrdiff_t ext, lb;
+  uint64_t flags;
 
   res = ompi_datatype_pack_external_size("external32", srccount, srctype, &size);
   if (OMPI_SUCCESS != res) {
     NBC_Error ("MPI Error in ompi_datatype_pack_external_size() (%i)", res);
     return res;
   }
-#if OPAL_CUDA_SUPPORT
-  if(NBC_Type_intrinsic(srctype) && !(opal_cuda_check_bufs((char *)tgt, (char *)src))) {
-#else
-  if(NBC_Type_intrinsic(srctype)) {
-#endif /* OPAL_CUDA_SUPPORT */
+  if(NBC_Type_intrinsic(srctype) &&
+     opal_accelerator.check_addr(tgt, &dev_id, &flags) <= 0 &&
+     opal_accelerator.check_addr(src, &dev_id, &flags) <= 0) {
     /* if we have the same types and they are contiguous (intrinsic
      * types are contiguous), we can just use a single memcpy */
     res = ompi_datatype_get_extent (srctype, &lb, &ext);
