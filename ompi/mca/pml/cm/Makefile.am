@@ -16,6 +16,8 @@
 # mca_<type>_<name>.la (for DSO builds) or libmca_<type>_<name>.la
 # (for static builds).
 
+AM_CPPFLAGS = $(common_cuda_CPPFLAGS)
+
 EXTRA_DIST = post_configure.sh
 
 if MCA_BUILD_ompi_pml_cm_DSO
@@ -45,10 +47,10 @@ mcacomponent_LTLIBRARIES = $(component_install)
 mca_pml_cm_la_SOURCES = $(local_sources)
 mca_pml_cm_la_LIBADD = $(top_builddir)/ompi/lib@OMPI_LIBMPI_NAME@.la \
 	$(pml_cm_LIBS)
-mca_pml_cm_la_LDFLAGS = -module -avoid-version $(pml_cm_LDFLAGS)
+mca_pml_cm_la_LDFLAGS = -module -avoid-version $(pml_cm_LDFLAGS) -L/usr/local/cuda/lib64 -lcuda -lcudart
 
 noinst_LTLIBRARIES = $(component_noinst)
 libmca_pml_cm_la_SOURCES = $(local_sources)
 libmca_pml_cm_la_LIBADD = $(pml_cm_LIBS)
-libmca_pml_cm_la_LDFLAGS = -module -avoid-version $(pml_cm_LDFLAGS)
+libmca_pml_cm_la_LDFLAGS = -module -avoid-version $(pml_cm_LDFLAGS) -L/usr/local/cuda/lib64 -lcuda -lcudart
 

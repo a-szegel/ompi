@@ -217,7 +217,13 @@ static int accelerator_cuda_check_addr(const void *addr, int *dev_id, uint64_t *
 static int accelerator_cuda_create_stream(int dev_id, opal_accelerator_stream_t **stream)
 {
     CUresult result;
+
+    if (stream == NULL || dev_id < 0) {
+        return OPAL_ERR_BAD_PARAM;
+    }
+
     *stream = malloc(sizeof(opal_accelerator_stream_t));
+
     if (NULL == *stream) {
         return OPAL_ERR_OUT_OF_RESOURCE;
     }
@@ -263,6 +269,11 @@ static int accelerator_cuda_destroy_stream(opal_accelerator_stream_t *stream)
 static int accelerator_cuda_synchronize_stream(opal_accelerator_stream_t *stream)
 {
     CUresult result;
+
+    if (stream == NULL) {
+        return OPAL_ERR_BAD_PARAM;
+    }
+
     OPAL_THREAD_LOCK(&opal_accelerator_cuda_stream_lock);
     result = opal_accelerator_cuda_func.cuStreamSynchronize(*(CUstream *)stream->stream);
     OPAL_THREAD_UNLOCK(&opal_accelerator_cuda_stream_lock);
@@ -277,6 +288,11 @@ static int accelerator_cuda_synchronize_stream(opal_accelerator_stream_t *stream
 static int accelerator_cuda_create_event(opal_accelerator_event_t *event)
 {
     CUresult result;
+
+    if (event == NULL) {
+        return OPAL_ERR_BAD_PARAM;
+    }
+
     event->event = malloc(sizeof(CUevent));
     if (NULL == event->event) {
         free(event);
@@ -313,6 +329,11 @@ static int accelerator_cuda_destroy_event(opal_accelerator_event_t *event)
 static int accelerator_cuda_record_event(opal_accelerator_event_t *event, opal_accelerator_stream_t *stream)
 {
     CUresult result;
+
+    if (stream == NULL || event == NULL) {
+        return OPAL_ERR_BAD_PARAM;
+    }
+
     OPAL_THREAD_LOCK(&opal_accelerator_cuda_stream_lock);
     result = opal_accelerator_cuda_func.cuEventRecord(*(CUevent *)event->event, *(CUstream *)stream->stream);
     OPAL_THREAD_UNLOCK(&opal_accelerator_cuda_stream_lock);
@@ -327,6 +348,11 @@ static int accelerator_cuda_record_event(opal_accelerator_event_t *event, opal_a
 static int accelerator_cuda_query_event(opal_accelerator_event_t *event)
 {
     CUresult result;
+
+    if (event == NULL) {
+        return OPAL_ERR_BAD_PARAM;
+    }
+
     OPAL_THREAD_LOCK(&opal_accelerator_cuda_stream_lock);
     result = opal_accelerator_cuda_func.cuEventQuery(*(CUevent *)event->event);
     OPAL_THREAD_UNLOCK(&opal_accelerator_cuda_stream_lock);
@@ -353,6 +379,11 @@ static int accelerator_cuda_query_event(opal_accelerator_event_t *event)
 static int accelerator_cuda_synchronize_event(opal_accelerator_event_t *event)
 {
     CUresult result;
+
+    if (event == NULL) {
+        return OPAL_ERR_BAD_PARAM;
+    }
+
     result = opal_accelerator_cuda_func.cuEventSynchronize(*(CUevent *)event->event);
     if (OPAL_UNLIKELY(CUDA_SUCCESS != result)) {
         opal_show_help("help-mpi-common-cuda.txt", "cuEventSynchronize failed", true,
@@ -366,6 +397,11 @@ static int accelerator_cuda_memcpy_async(int dev_id, void *dest, const void *src
                                   opal_accelerator_stream_t *stream, opal_accelerator_transfer_type_t type)
 {
     CUresult result;
+
+    if (dev_id < 0 || stream == NULL || dest == NULL || src == NULL || size <= 0) {
+        return OPAL_ERR_BAD_PARAM;
+    }
+
     result = opal_accelerator_cuda_func.cuMemcpyAsync((CUdeviceptr) dest, (CUdeviceptr) src, size, *(CUstream *)stream->stream);
     if (OPAL_UNLIKELY(CUDA_SUCCESS != result)) {
         opal_show_help("help-accelerator-cuda.txt", "cuMemcpyAsync failed", true, dest, src,
@@ -379,6 +415,10 @@ static int accelerator_cuda_memcpy(int dev_id, void *dest, const void *src,
                             size_t size, opal_accelerator_transfer_type_t type)
 {
     CUresult result;
+
+    if (dev_id < 0 || dest == NULL || src == NULL || size <= 0) {
+        return OPAL_ERR_BAD_PARAM;
+    }
 
     /* Async copy then synchronize is the default behavior as some applications
      * cannot utilize synchronous copies.
@@ -408,8 +448,8 @@ static int accelerator_cuda_vector_memcpy(int dev_id, void *dest, size_t dpitch,
     CUmemorytype src_type, dest_type;
     CUresult result;
 
-    if (width <= 0 || height <= 0) {
-        return OPAL_SUCCESS;
+    if (dev_id < 0 || dest == NULL || src == NULL || width <= 0 || height <= 0) {
+        return OPAL_ERR_BAD_PARAM;
     }
 
     switch (type) {
@@ -511,6 +551,10 @@ static int accelerator_cuda_memmove(int dev_id, void *dest, const void *src, siz
     CUdeviceptr tmp;
     CUresult result;
 
+    if (dev_id < 0 || dest == NULL || src == NULL || size <= 0) {
+        return OPAL_ERR_BAD_PARAM;
+    }
+
     result = opal_accelerator_cuda_func.cuMemAlloc(&tmp, size);
     if (OPAL_UNLIKELY(CUDA_SUCCESS != result)) {
         return OPAL_ERROR;
@@ -540,6 +584,11 @@ static int accelerator_cuda_memmove(int dev_id, void *dest, const void *src, siz
 static int accelerator_cuda_malloc(void **ptr, size_t size)
 {
     CUresult result;
+
+    if (ptr == NULL || size == 0) {
+        return OPAL_ERR_BAD_PARAM;
+    }
+
     if (size > 0) {
         result = opal_accelerator_cuda_func.cuMemAlloc((CUdeviceptr *) ptr, size);
         if (OPAL_UNLIKELY(CUDA_SUCCESS != result)) {
@@ -569,6 +618,11 @@ static int accelerator_cuda_get_address_range(const void *ptr, void **base,
                                        size_t *size)
 {
     CUresult result;
+
+    if (ptr == NULL || base == NULL || size == NULL) {
+        return OPAL_ERR_BAD_PARAM;
+    }
+
     result = opal_accelerator_cuda_func.cuMemGetAddressRange((CUdeviceptr *) base, size, (CUdeviceptr) ptr);
     if (OPAL_UNLIKELY(CUDA_SUCCESS != result)) {
         opal_show_help("help-accelerator-cuda.txt", "cuMemGetAddressRange failed 2", true,
@@ -595,7 +649,7 @@ static size_t accelerator_cuda_get_handle_size(void)
 static int accelerator_cuda_get_handle(void *dev_ptr, void **handle)
 {
     CUresult result;
-    if (NULL != dev_ptr) {
+    if (NULL != dev_ptr && handle != NULL) {
         result = opal_accelerator_cuda_func.cuIpcGetMemHandle((CUipcMemHandle *) handle, (CUdeviceptr) dev_ptr);
         if (OPAL_UNLIKELY(CUDA_SUCCESS != result)) {
             opal_show_help("help-accelerator-cuda.txt", "cuIpcGetMemHandle failed", true, result, dev_ptr);
@@ -608,9 +662,14 @@ static int accelerator_cuda_get_handle(void *dev_ptr, void **handle)
     return OPAL_SUCCESS;
 }
 
-static int accelerator_cuda_open_handle(void *handle, int dev_id,  void **dev_ptr)
+static int accelerator_cuda_open_handle(void *handle, int dev_id, void **dev_ptr)
 {
     CUresult result;
+
+    if (handle == NULL || dev_id < 0 || dev_ptr == NULL) {
+        return OPAL_ERR_BAD_PARAM;
+    }
+
     result = opal_accelerator_cuda_func.cuIpcOpenMemHandle((CUdeviceptr *) dev_ptr, *(CUipcMemHandle *) handle,
                                        CU_IPC_MEM_LAZY_ENABLE_PEER_ACCESS);
     if (OPAL_UNLIKELY(CUDA_SUCCESS != result)) {
@@ -637,14 +696,17 @@ static int accelerator_cuda_close_handle(void *dev_ptr)
 static int accelerator_cuda_host_register(void *ptr, size_t size)
 {
     CUresult result;
-    if (NULL != ptr) {
-        result = opal_accelerator_cuda_func.cuMemHostRegister(ptr, size, 0);
-        if (OPAL_UNLIKELY(CUDA_SUCCESS != result)) {
-            opal_show_help("help-accelerator-cuda.txt", "cuMemHostRegister failed", true,
-                           ptr, size, OPAL_PROC_MY_HOSTNAME, result);
-            return result;
-        }
+    if (NULL == ptr && size > 0) {
+        return OPAL_ERR_BAD_PARAM;
     }
+
+    result = opal_accelerator_cuda_func.cuMemHostRegister(ptr, size, 0);
+    if (OPAL_UNLIKELY(CUDA_SUCCESS != result)) {
+        opal_show_help("help-accelerator-cuda.txt", "cuMemHostRegister failed", true,
+                       ptr, size, OPAL_PROC_MY_HOSTNAME, result);
+        return result;
+    }
+
     return OPAL_SUCCESS;
 }
 
@@ -667,6 +729,10 @@ static int accelerator_cuda_get_device(int *dev_id)
     CUdevice cuDev;
     CUresult result;
 
+    if (dev_id == NULL) {
+        return OPAL_ERR_BAD_PARAM;
+    }
+
     result = opal_accelerator_cuda_func.cuCtxGetDevice(&cuDev);
     if (OPAL_UNLIKELY(CUDA_SUCCESS != result)) {
         opal_show_help("help-accelerator-cuda.txt", "cuCtxGetDevice failed", true,
@@ -680,6 +746,11 @@ static int accelerator_cuda_get_device(int *dev_id)
 static int accelerator_cuda_device_can_access_peer(int *access, int dev1, int dev2)
 {
     CUresult result;
+
+    if (access == NULL) {
+        return OPAL_ERR_BAD_PARAM;
+    }
+
     result = opal_accelerator_cuda_func.cuDeviceCanAccessPeer(access, (CUdevice) dev1, (CUdevice) dev2);
     if (OPAL_UNLIKELY(CUDA_SUCCESS != result)) {
         opal_show_help("help-accelerator-cuda.txt", "cuDeviceCanAccessPeer failed", true,
